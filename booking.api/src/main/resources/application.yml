@@ -1,0 +1,19 @@
+spring:
+  profiles:
+    active: prod
+  data:
+    mongodb:
+      uri: mongodb+srv://vinodh5052:Infy%40664246@vinodh-booking-db-zpg00.mongodb.net/Booking
+      #mongodb://vinodh5052:@vinodh-booking-db-zpg00.mongodb.net/Booking
+      #port: 27017
+      #host: vinodh-booking-db-zpg00.mongodb.net
+      #database: Booking
+      #username: vinodh5052
+      #password: INfy@664246
+  security:
+    user:
+      name: admin
+      password: admin
+server:
+  port: 9696
+
