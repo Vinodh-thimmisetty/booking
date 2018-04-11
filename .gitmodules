@@ -1,0 +1,3 @@
+[submodule "booking.ui"]
+	path = booking.ui
+	url = https://github.com/Vinodh-thimmisetty/booking/booking.ui.git
