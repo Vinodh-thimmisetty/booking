@@ -1,6 +1,6 @@
 package com.vinodh.booking.api.controllers;
 
-import com.vinodh.booking.api.domain.Admin;
+import com.vinodh.booking.api.collections.Admin;
 import com.vinodh.booking.api.repository.AdminMongoRepository;
 import io.swagger.annotations.*;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class AdminController {
     }
 
     @GetMapping("/findbyAdminName/{adminName}")
-    @ApiOperation(value = "Get Specifc Admin Details", response = Admin.class)
+    @ApiOperation(value = "Get Specific Admin Details", response = Admin.class)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Successfully retrieved Admin Info"),
             @ApiResponse(code = 401, message = "You are not authorized to view the resource"),

@@ -1,13 +1,29 @@
 package com.vinodh.booking.api.config;
 
+import com.vinodh.booking.api.jwt.JWTUserDetailsService;
+import com.vinodh.booking.api.jwt.JwtAuthenticationEntryPoint;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
+import org.springframework.security.core.userdetails.UserDetailsByNameServiceWrapper;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.vinodh.booking.api.utils.UserRole.ADMIN;
 import static com.vinodh.booking.api.utils.UserRole.USER;
@@ -55,51 +71,101 @@ import static java.lang.String.valueOf;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    private JWTUserDetailsService jwtUserDetailsService;
+    private JwtAuthenticationEntryPoint unauthorizedHandler;
+
+    public SecurityConfig(JWTUserDetailsService jwtUserDetailsService, JwtAuthenticationEntryPoint unauthorizedHandler) {
+        this.jwtUserDetailsService = jwtUserDetailsService;
+        this.unauthorizedHandler = unauthorizedHandler;
+    }
+
+    @Value("${jwt.header}")
+    private String tokenHeader;
+
+    @Value("${jwt.route.authentication.path}")
+    private String authenticationPath;
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+       /* auth
+                .userDetailsService(jwtUserDetailsService)
+                .passwordEncoder(passwordEncoderBean());*/
+        auth
+                .inMemoryAuthentication()
+                .withUser("user")  // #1
+                .password("user")
+                .roles("USER")
+                .and()
+                .withUser("admin") // #2
+                .password("admin")
+                .roles("ADMIN","USER");
+    }
+
+    @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
-        // AuthenticationManager using one of the Authentication Providers which in turn uses UserDetails Service and
-        // returns UserDetails(it has Granted Authorities) and set the user principle in Security context filter
-
         return super.authenticationManagerBean();
     }
 
+
+   /* @Bean
     @Override
-    protected AuthenticationManager authenticationManager() throws Exception {
-        return super.authenticationManager();
+    public AuthenticationManager authenticationManagerBean() {
+        // AuthenticationManager using one of the Authentication Providers which in turn uses UserDetails Service and
+        // returns UserDetails(it has Granted Authorities) and set the user principle in Security context filter
+        return new ProviderManager(Stream.of(authenticationProviderBean()).collect(Collectors.toList()));
     }
 
-    @Override
-    public UserDetailsService userDetailsServiceBean() throws Exception {
-        return super.userDetailsServiceBean();
+    @Bean
+    public AuthenticationProvider authenticationProviderBean() {
+        PreAuthenticatedAuthenticationProvider authenticationProvider = new PreAuthenticatedAuthenticationProvider();
+        authenticationProvider.setPreAuthenticatedUserDetailsService(authenticationUserDetailsService());
+        return authenticationProvider;
     }
 
-    @Override
-    protected UserDetailsService userDetailsService() {
-        return super.userDetailsService();
+    @Bean
+    public AuthenticationUserDetailsService<PreAuthenticatedAuthenticationToken> authenticationUserDetailsService() {
+        UserDetailsByNameServiceWrapper<PreAuthenticatedAuthenticationToken> userDetailsWrapper = new
+                UserDetailsByNameServiceWrapper<>();
+        userDetailsWrapper.setUserDetailsService(jwtUserDetailsService);
+        return userDetailsWrapper;
+    }*/
+
+    @Bean
+    public PasswordEncoder passwordEncoderBean() {
+        return new BCryptPasswordEncoder();
     }
 
     /**
      * Filter Security Interceptor
      *
-     * @param http
-     * @throws Exception
+     * @param httpSecurity Security Interceptor
+     * @throws Exception Generic Exception
      */
     @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.antMatcher("/**")
+    protected void configure(HttpSecurity httpSecurity) throws Exception {
+
+        httpSecurity.csrf().disable();
+        httpSecurity.antMatcher("/**")
                 .authorizeRequests()
+                // Static resource paths
                 .antMatchers("/resources/**").permitAll()
+                // End points urls
                 .mvcMatchers("/admin/**").hasRole(valueOf(ADMIN))
                 .mvcMatchers("/users/**").hasRole(valueOf(USER))
-                .anyRequest().authenticated()
-                .and()
-                .formLogin().loginPage("custom-login-page").permitAll()
-//                .and()
-//                .httpBasic()
-                .and()
-//                .oauth2Login()
-//                .and()
-                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+                .mvcMatchers("/*/**").hasRole(valueOf(USER))
+                .anyRequest().authenticated();
+
+        httpSecurity.formLogin().permitAll();
+        httpSecurity.httpBasic();
+//
+//        httpSecurity.exceptionHandling().authenticationEntryPoint(unauthorizedHandler);
+//
+//        httpSecurity.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+
+
+        // httpSecurity.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
 
     }
 

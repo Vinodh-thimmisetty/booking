@@ -10,10 +10,22 @@ spring:
       #database: Booking
       #username: vinodh5052
       #password: INfy@664246
-  security:
-    user:
-      name: admin
-      password: admin
+#  security:
+#    user:
+#      name: admin
+#      password: admin
 server:
   port: 9696
 
+# JWT related properties Starts
+
+jwt:
+  header: Authorization
+  secret: mySecret
+  expiration: 604800
+  route:
+    authentication:
+      path: /auth
+      refresh: /refresh
+
+# JWT related properties Ends
